@@ -66,32 +66,30 @@ defmodule PhoenixKitOg.Render.Svg do
        when is_binary(src) and src != "" do
     resolved = Slots.substitute(src, ctx[:values] || %{})
 
-    cond do
-      String.starts_with?(resolved, "{{") or resolved == "" ->
-        # Unresolved slot — no href we can safely emit. Fall back to the
-        # solid default color if declared, else the fixed dark bg.
-        fallback = Map.get(bg, "value_fallback", "#0b1220")
-        ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#{escape(fallback)}"/>|
+    if String.starts_with?(resolved, "{{") or resolved == "" do
+      # Unresolved slot — no href we can safely emit. Fall back to the
+      # solid default color if declared, else the fixed dark bg.
+      fallback = Map.get(bg, "value_fallback", "#0b1220")
+      ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#{escape(fallback)}"/>|
+    else
+      href = resolve_image_href(resolved)
 
-      true ->
-        href = resolve_image_href(resolved)
+      if href == "" do
+        ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#0b1220"/>|
+      else
+        overlay = Map.get(bg, "overlay_opacity", 0)
+        overlay_hex = overlay_hex(bg)
 
-        if href == "" do
-          ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#0b1220"/>|
-        else
-          overlay = Map.get(bg, "overlay_opacity", 0)
-          overlay_hex = overlay_hex(bg)
+        overlay_rect =
+          if is_number(overlay) and overlay > 0,
+            do:
+              ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#{overlay_hex}" fill-opacity="#{overlay}"/>|,
+            else: ""
 
-          overlay_rect =
-            if is_number(overlay) and overlay > 0,
-              do:
-                ~s|<rect x="0" y="0" width="#{w}" height="#{h}" fill="#{overlay_hex}" fill-opacity="#{overlay}"/>|,
-              else: ""
+        preserve = fit_to_preserve_aspect_ratio(Map.get(bg, "fit", "fill"))
 
-          preserve = fit_to_preserve_aspect_ratio(Map.get(bg, "fit", "fill"))
-
-          ~s|<image href="#{escape(href)}" x="0" y="0" width="#{w}" height="#{h}" preserveAspectRatio="#{preserve}"/>#{overlay_rect}|
-        end
+        ~s|<image href="#{escape(href)}" x="0" y="0" width="#{w}" height="#{h}" preserveAspectRatio="#{preserve}"/>#{overlay_rect}|
+      end
     end
   end
 
@@ -352,6 +350,7 @@ defmodule PhoenixKitOg.Render.Svg do
   defp with_font_fallback(_), do: Enum.join(@font_fallbacks, ", ")
 
   defp num(v, _default) when is_number(v), do: v
+
   defp num(v, default) when is_binary(v) do
     case Float.parse(v) do
       {n, _} -> n

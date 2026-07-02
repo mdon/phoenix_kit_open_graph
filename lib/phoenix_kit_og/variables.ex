@@ -123,15 +123,13 @@ defmodule PhoenixKitOg.Variables do
     do: Map.put(acc, slot_name, value)
 
   defp put_resolved(acc, slot_name, var_name, context, globals_values) do
-    cond do
-      Map.has_key?(globals_values, var_name) ->
-        Map.put(acc, slot_name, globals_values[var_name])
-
-      true ->
-        case resolve_via_module(var_name, context) do
-          {:ok, value} -> Map.put(acc, slot_name, to_string(value))
-          :error -> acc
-        end
+    if Map.has_key?(globals_values, var_name) do
+      Map.put(acc, slot_name, globals_values[var_name])
+    else
+      case resolve_via_module(var_name, context) do
+        {:ok, value} -> Map.put(acc, slot_name, to_string(value))
+        :error -> acc
+      end
     end
   end
 

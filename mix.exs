@@ -67,6 +67,11 @@ defmodule PhoenixKitOg.MixProject do
       # carries `:rustler` as an optional dep so the source-build fallback
       # works on bleeding-edge OTP NIF versions (see /www/app/mix.exs).
       {:resvg, "~> 0.5"},
+      # `mdex_native` (transitive via phoenix_kit) needs rustler on hosts
+      # where its precompiled NIF doesn't match the local NIF version.
+      # Optional + `>= 0.0.0` so we don't pin a version that fights hex
+      # deps; matches the parent app's declaration.
+      {:rustler, ">= 0.0.0", optional: true},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},

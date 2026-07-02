@@ -252,7 +252,9 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     slot = socket.assigns.media_slot_target
 
     if is_binary(file_uuid) and is_binary(slot) do
-      mapping = Map.put(socket.assigns.edit_state.slot_mapping || %{}, slot, "custom:" <> file_uuid)
+      mapping =
+        Map.put(socket.assigns.edit_state.slot_mapping || %{}, slot, "custom:" <> file_uuid)
+
       edit_state = Map.put(socket.assigns.edit_state, :slot_mapping, mapping)
 
       {:noreply,
@@ -314,59 +316,57 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     st = socket.assigns.edit_state
     template = Enum.find(socket.assigns.templates, &(&1.uuid == st.template_uuid))
 
-    cond do
-      is_nil(template) ->
-        socket |> assign(:preview_url, nil) |> assign(:preview_error, nil)
+    if is_nil(template) do
+      socket |> assign(:preview_url, nil) |> assign(:preview_error, nil)
+    else
+      canvas = template.canvas
+      slots = if is_map(canvas), do: Slots.used(canvas), else: []
+      mapping = st.slot_mapping || %{}
 
-      true ->
-        canvas = template.canvas
-        slots = if is_map(canvas), do: Slots.used(canvas), else: []
-        mapping = st.slot_mapping || %{}
+      # Look up the picked post so module vars (`post_title`,
+      # `post_featured_image`, …) resolve to real data.
+      resource =
+        Enum.find(
+          socket.assigns.preview_posts,
+          &(&1[:uuid] == socket.assigns.preview_post_uuid)
+        )
 
-        # Look up the picked post so module vars (`post_title`,
-        # `post_featured_image`, …) resolve to real data.
-        resource =
-          Enum.find(
-            socket.assigns.preview_posts,
-            &(&1[:uuid] == socket.assigns.preview_post_uuid)
-          )
+      context = %{
+        module_key: @consumer,
+        resource: resource,
+        conn: nil,
+        language: socket.assigns[:current_locale] || ""
+      }
 
-        context = %{
-          module_key: @consumer,
-          resource: resource,
-          conn: nil,
-          language: socket.assigns[:current_locale] || ""
-        }
+      wired = Variables.resolve(slots, mapping, context)
+      globals = socket.assigns.global_values
 
-        wired = Variables.resolve(slots, mapping, context)
-        globals = socket.assigns.global_values
+      values =
+        slots
+        |> Enum.reduce(%{}, fn %{name: name, type: type}, acc ->
+          cond do
+            Map.has_key?(wired, name) -> Map.put(acc, name, wired[name])
+            type == :image -> Map.put(acc, name, PhoenixKitOg.Render.Placeholder.data_url())
+            true -> Map.put(acc, name, "Sample #{name}")
+          end
+        end)
+        |> Map.merge(globals, fn _k, v1, _v2 -> v1 end)
 
-        values =
-          slots
-          |> Enum.reduce(%{}, fn %{name: name, type: type}, acc ->
-            cond do
-              Map.has_key?(wired, name) -> Map.put(acc, name, wired[name])
-              type == :image -> Map.put(acc, name, PhoenixKitOg.Render.Placeholder.data_url())
-              true -> Map.put(acc, name, "Sample #{name}")
-            end
-          end)
-          |> Map.merge(globals, fn _k, v1, _v2 -> v1 end)
+      # Wrap the template so the render pipeline treats every edit as
+      # a fresh input — the cache key hashes the canvas so unchanged
+      # renders are instant, but changes get a new URL.
+      %PhoenixKitOg.Schemas.Template{} = template
+      render_template = %{template | updated_at: DateTime.utc_now()}
 
-        # Wrap the template so the render pipeline treats every edit as
-        # a fresh input — the cache key hashes the canvas so unchanged
-        # renders are instant, but changes get a new URL.
-        %PhoenixKitOg.Schemas.Template{} = template
-        render_template = %{template | updated_at: DateTime.utc_now()}
+      case PhoenixKitOg.Render.render_url(render_template, %{values: values}) do
+        {:ok, url} ->
+          socket |> assign(:preview_url, url) |> assign(:preview_error, nil)
 
-        case PhoenixKitOg.Render.render_url(render_template, %{values: values}) do
-          {:ok, url} ->
-            socket |> assign(:preview_url, url) |> assign(:preview_error, nil)
-
-          {:error, reason} ->
-            socket
-            |> assign(:preview_url, nil)
-            |> assign(:preview_error, humanize_preview_error(reason))
-        end
+        {:error, reason} ->
+          socket
+          |> assign(:preview_url, nil)
+          |> assign(:preview_error, humanize_preview_error(reason))
+      end
     end
   end
 
@@ -440,8 +440,7 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
   end
 
   defp humanize_preview_error(:rasterizer_missing),
-    do:
-      gettext("Preview render needs the resvg NIF — check that the dep resolved on this build.")
+    do: gettext("Preview render needs the resvg NIF — check that the dep resolved on this build.")
 
   defp humanize_preview_error(reason),
     do: gettext("Preview render failed: %{reason}", reason: inspect(reason))
@@ -539,8 +538,8 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
   # Overview list
   # =========================================================================
 
-  attr :assignments, :list, required: true
-  attr :groups, :list, required: true
+  attr(:assignments, :list, required: true)
+  attr(:groups, :list, required: true)
 
   defp assignments_list(assigns) do
     ~H"""
@@ -566,8 +565,8 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     """
   end
 
-  attr :assignment, :map, required: true
-  attr :groups, :list, required: true
+  attr(:assignment, :map, required: true)
+  attr(:groups, :list, required: true)
 
   defp assignment_row(assigns) do
     template = assigns.assignment.template
@@ -625,17 +624,17 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
   # Edit / new modal
   # =========================================================================
 
-  attr :show, :boolean, required: true
-  attr :is_new, :boolean, required: true
-  attr :state, :map, required: true
-  attr :templates, :list, required: true
-  attr :groups, :list, required: true
-  attr :module_variables, :list, required: true
-  attr :preview_url, :string, default: nil
-  attr :preview_error, :string, default: nil
-  attr :preview_group_slug, :string, default: nil
-  attr :preview_posts, :list, default: []
-  attr :preview_post_uuid, :string, default: nil
+  attr(:show, :boolean, required: true)
+  attr(:is_new, :boolean, required: true)
+  attr(:state, :map, required: true)
+  attr(:templates, :list, required: true)
+  attr(:groups, :list, required: true)
+  attr(:module_variables, :list, required: true)
+  attr(:preview_url, :string, default: nil)
+  attr(:preview_error, :string, default: nil)
+  attr(:preview_group_slug, :string, default: nil)
+  attr(:preview_posts, :list, default: [])
+  attr(:preview_post_uuid, :string, default: nil)
 
   defp edit_modal(assigns) do
     selected_template =
@@ -760,12 +759,12 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     """
   end
 
-  attr :url, :string, default: nil
-  attr :error, :string, default: nil
-  attr :groups, :list, default: []
-  attr :group_slug, :string, default: nil
-  attr :posts, :list, default: []
-  attr :post_uuid, :string, default: nil
+  attr(:url, :string, default: nil)
+  attr(:error, :string, default: nil)
+  attr(:groups, :list, default: [])
+  attr(:group_slug, :string, default: nil)
+  attr(:posts, :list, default: [])
+  attr(:post_uuid, :string, default: nil)
 
   defp preview_panel(assigns) do
     ~H"""
@@ -866,9 +865,9 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     "#{title}#{badge}"
   end
 
-  attr :slots, :list, required: true
-  attr :slot_mapping, :map, required: true
-  attr :variables, :list, required: true
+  attr(:slots, :list, required: true)
+  attr(:slot_mapping, :map, required: true)
+  attr(:variables, :list, required: true)
 
   defp modal_slot_wiring(assigns) do
     ~H"""
@@ -897,9 +896,9 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
 
   # One row per template slot. Grid columns give every row the same
   # label width so the arrows line up regardless of slot-name length.
-  attr :slot, :map, required: true
-  attr :value, :string, default: nil
-  attr :variables, :list, required: true
+  attr(:slot, :map, required: true)
+  attr(:value, :string, default: nil)
+  attr(:variables, :list, required: true)
 
   defp slot_row(assigns) do
     is_custom = is_binary(assigns.value) and String.starts_with?(assigns.value, "custom:")
@@ -969,8 +968,8 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
     """
   end
 
-  attr :slot, :string, required: true
-  attr :value, :string, default: ""
+  attr(:slot, :string, required: true)
+  attr(:value, :string, default: "")
 
   defp slot_custom_media(assigns) do
     preview =
@@ -1054,9 +1053,14 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
 
   defp scope_label(%{scope_type: "group", scope_uuid: uuid}, groups) do
     case Enum.find(groups, &(&1["uuid"] == uuid)) do
-      %{"name" => name} when is_binary(name) and name != "" -> gettext("Group: %{name}", name: name)
-      %{"slug" => slug} when is_binary(slug) -> gettext("Group: %{name}", name: slug)
-      _ -> gettext("Group: %{name}", name: uuid || "?")
+      %{"name" => name} when is_binary(name) and name != "" ->
+        gettext("Group: %{name}", name: name)
+
+      %{"slug" => slug} when is_binary(slug) ->
+        gettext("Group: %{name}", name: slug)
+
+      _ ->
+        gettext("Group: %{name}", name: uuid || "?")
     end
   end
 
