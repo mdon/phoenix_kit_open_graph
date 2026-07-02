@@ -11,6 +11,16 @@ defmodule PhoenixKitOg.Schemas.Template do
 
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{
+          uuid: binary() | nil,
+          name: String.t() | nil,
+          description: String.t() | nil,
+          canvas: map(),
+          preview_image_uuid: binary() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
+
   @primary_key {:uuid, UUIDv7, autogenerate: true}
   @foreign_key_type UUIDv7
   @timestamps_opts [type: :utc_datetime]

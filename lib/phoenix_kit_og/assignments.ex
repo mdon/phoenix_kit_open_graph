@@ -21,6 +21,7 @@ defmodule PhoenixKitOg.Assignments do
   import Ecto.Query, warn: false
 
   alias PhoenixKit.RepoHelper, as: Repo
+  alias PhoenixKitOg.ActivityLog
   alias PhoenixKitOg.Schemas.{Assignment, Template}
 
   @doc """
@@ -41,9 +42,9 @@ defmodule PhoenixKitOg.Assignments do
   Upserts an assignment. Pass `scope_uuid: nil` for the module-wide
   default tier.
   """
-  @spec set(String.t(), String.t(), binary() | nil, binary()) ::
+  @spec set(String.t(), String.t(), binary() | nil, binary(), keyword()) ::
           {:ok, Assignment.t()} | {:error, Ecto.Changeset.t()}
-  def set(module_key, scope_type, scope_uuid, template_uuid) do
+  def set(module_key, scope_type, scope_uuid, template_uuid, opts \\ []) do
     case get(module_key, scope_type, scope_uuid) do
       nil ->
         %Assignment{}
@@ -54,20 +55,27 @@ defmodule PhoenixKitOg.Assignments do
           template_uuid: template_uuid
         })
         |> Repo.insert()
+        |> ActivityLog.log("assignment.created", opts, &assignment_activity/1)
 
       %Assignment{} = existing ->
         existing
         |> Assignment.changeset(%{template_uuid: template_uuid})
         |> Repo.update()
+        |> ActivityLog.log("assignment.updated", opts, &assignment_activity/1)
     end
   end
 
-  @spec clear(String.t(), String.t(), binary() | nil) ::
+  @spec clear(String.t(), String.t(), binary() | nil, keyword()) ::
           {:ok, Assignment.t()} | {:error, :not_found}
-  def clear(module_key, scope_type, scope_uuid) do
+  def clear(module_key, scope_type, scope_uuid, opts \\ []) do
     case get(module_key, scope_type, scope_uuid) do
-      nil -> {:error, :not_found}
-      %Assignment{} = a -> Repo.delete(a)
+      nil ->
+        {:error, :not_found}
+
+      %Assignment{} = a ->
+        a
+        |> Repo.delete()
+        |> ActivityLog.log("assignment.deleted", opts, &assignment_activity/1)
     end
   end
 
@@ -75,12 +83,14 @@ defmodule PhoenixKitOg.Assignments do
   Updates just the `slot_mapping` on an existing assignment. The
   wiring UI writes here every time a slot dropdown changes.
   """
-  @spec update_slot_mapping(Assignment.t(), map()) ::
+  @spec update_slot_mapping(Assignment.t(), map(), keyword()) ::
           {:ok, Assignment.t()} | {:error, Ecto.Changeset.t()}
-  def update_slot_mapping(%Assignment{} = assignment, mapping) when is_map(mapping) do
+  def update_slot_mapping(%Assignment{} = assignment, mapping, opts \\ [])
+      when is_map(mapping) do
     assignment
     |> Assignment.changeset(%{slot_mapping: mapping})
     |> Repo.update()
+    |> ActivityLog.log("assignment.slot_mapping_updated", opts, &assignment_activity/1)
   end
 
   @spec get(String.t(), String.t(), binary() | nil) :: Assignment.t() | nil
@@ -152,5 +162,20 @@ defmodule PhoenixKitOg.Assignments do
             {:cont, :none}
         end
     end)
+  end
+
+  # PII-safe activity payload: module + scope shape + template pointer.
+  # No slot_mapping content (users type into it — treat as free text).
+  defp assignment_activity(%Assignment{} = a) do
+    %{
+      resource_type: "phoenix_kit_og_assignment",
+      resource_uuid: a.uuid,
+      metadata: %{
+        "module_key" => a.module_key,
+        "scope_type" => a.scope_type,
+        "scope_uuid" => a.scope_uuid,
+        "template_uuid" => a.template_uuid
+      }
+    }
   end
 end

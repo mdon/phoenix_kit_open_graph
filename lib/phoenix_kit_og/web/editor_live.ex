@@ -35,7 +35,7 @@ defmodule PhoenixKitOg.Web.EditorLive do
   # boilerplate on our side.
   use PhoenixKitWeb.Components.MediaBrowser.Embed
 
-  alias PhoenixKitOg.{Canvas, Paths, Slots, Templates, Variables}
+  alias PhoenixKitOg.{Canvas, Errors, Paths, Slots, Templates, Variables}
   alias PhoenixKitOg.Schemas.Template
 
   @impl true
@@ -72,7 +72,7 @@ defmodule PhoenixKitOg.Web.EditorLive do
       {:error, :not_found} ->
         {:ok,
          socket
-         |> put_flash(:error, gettext("Template not found."))
+         |> put_flash(:error, Errors.message(:not_found))
          |> push_navigate(to: Paths.templates())}
     end
   end
@@ -218,7 +218,7 @@ defmodule PhoenixKitOg.Web.EditorLive do
       {:error, reason} ->
         {:noreply,
          socket
-         |> assign(:preview_error, humanize_preview_error(reason))
+         |> assign(:preview_error, preview_error_message(reason))
          |> assign(:preview_url, nil)
          |> assign(:show_preview_modal, true)}
     end
@@ -291,7 +291,7 @@ defmodule PhoenixKitOg.Web.EditorLive do
   def handle_event("update_template_name", %{"name" => name}, socket) do
     template = socket.assigns.template
 
-    case Templates.update(template, %{"name" => name}) do
+    case Templates.update(template, %{"name" => name}, actor_opts(socket)) do
       {:ok, template} ->
         {:noreply,
          socket
@@ -428,12 +428,12 @@ defmodule PhoenixKitOg.Web.EditorLive do
     end)
   end
 
-  defp humanize_preview_error(:rasterizer_missing),
-    do:
-      "Preview render needs the resvg NIF (Hex :resvg). It's expected to be a dep — check your workspace deps."
-
-  defp humanize_preview_error(reason),
-    do: "Preview render failed: #{inspect(reason)}"
+  # Preview errors flow through `Errors.message/1` so the copy stays
+  # aligned with the rest of the UI. Route the known atom through the
+  # dispatcher; anything else gets the generic wrapper so a raw tuple
+  # never leaks into the modal.
+  defp preview_error_message(:rasterizer_missing), do: Errors.message(:rasterizer_missing)
+  defp preview_error_message(reason), do: Errors.message({:render_failed, reason})
 
   defp close_media_selector(socket) do
     socket
@@ -444,7 +444,14 @@ defmodule PhoenixKitOg.Web.EditorLive do
   defp do_save(socket) do
     if socket.assigns.autosave_timer, do: Process.cancel_timer(socket.assigns.autosave_timer)
 
-    case Templates.update(socket.assigns.template, %{"canvas" => socket.assigns.canvas}) do
+    case Templates.update(
+           socket.assigns.template,
+           %{"canvas" => socket.assigns.canvas},
+           # Autosaves happen on a timer, not a user click — mark them
+           # `mode: "auto"` in the activity feed so manual saves stay
+           # distinguishable.
+           Keyword.put(actor_opts(socket), :mode, "auto")
+         ) do
       {:ok, template} ->
         {:noreply,
          socket
@@ -457,6 +464,13 @@ defmodule PhoenixKitOg.Web.EditorLive do
          socket
          |> put_flash(:error, gettext("Save failed — please retry."))
          |> assign(:save_state, :error)}
+    end
+  end
+
+  defp actor_opts(socket) do
+    case socket.assigns[:phoenix_kit_current_user] do
+      %{uuid: uuid} -> [actor_uuid: uuid]
+      _ -> []
     end
   end
 
@@ -476,6 +490,9 @@ defmodule PhoenixKitOg.Web.EditorLive do
 
   defp load_or_create_template(_params, :new) do
     name = "Untitled #{System.unique_integer([:positive])}"
+    # No socket here (`load_or_create_template/2` runs pre-mount); the
+    # actor is threaded later on the first save. Activity feed shows an
+    # anonymous `template.created` for the initial insert.
     Templates.create(%{"name" => name, "canvas" => Canvas.blank()})
   end
 

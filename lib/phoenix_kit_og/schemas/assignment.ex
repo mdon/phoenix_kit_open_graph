@@ -21,6 +21,18 @@ defmodule PhoenixKitOg.Schemas.Assignment do
 
   alias PhoenixKitOg.Schemas.Template
 
+  @type t :: %__MODULE__{
+          uuid: binary() | nil,
+          module_key: String.t() | nil,
+          scope_type: String.t() | nil,
+          scope_uuid: binary() | nil,
+          slot_mapping: map(),
+          template_uuid: binary() | nil,
+          template: Template.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
+
   @primary_key {:uuid, UUIDv7, autogenerate: true}
   @foreign_key_type UUIDv7
   @timestamps_opts [type: :utc_datetime]

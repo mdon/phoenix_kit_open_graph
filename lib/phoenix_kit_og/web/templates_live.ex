@@ -7,8 +7,7 @@ defmodule PhoenixKitOg.Web.TemplatesLive do
 
   use PhoenixKitWeb, :live_view
 
-  alias PhoenixKitOg.Paths
-  alias PhoenixKitOg.Templates
+  alias PhoenixKitOg.{Errors, Paths, Templates}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -26,23 +25,33 @@ defmodule PhoenixKitOg.Web.TemplatesLive do
   def handle_event("delete", %{"uuid" => uuid}, socket) do
     case Templates.get(uuid) do
       nil ->
-        {:noreply, put_flash(socket, :error, "Template not found.")}
+        {:noreply, put_flash(socket, :error, Errors.message(:not_found))}
 
       template ->
-        case Templates.delete(template) do
+        case Templates.delete(template, actor_opts(socket)) do
           {:ok, _} ->
             {:noreply,
              socket
-             |> put_flash(:info, "Deleted “#{template.name}”.")
+             |> put_flash(:info, gettext("Deleted “%{name}”.", name: template.name))
              |> load_templates()}
 
           {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Could not delete template.")}
+            {:noreply, put_flash(socket, :error, gettext("Could not delete template."))}
         end
     end
   end
 
   defp load_templates(socket), do: assign(socket, :templates, Templates.list())
+
+  # Standard actor-opts shape — passes actor_uuid to the context so
+  # the activity feed can attribute the change. Anonymous users
+  # (nil actor) still write an audit row, just unattributed.
+  defp actor_opts(socket) do
+    case socket.assigns[:phoenix_kit_current_user] do
+      %{uuid: uuid} -> [actor_uuid: uuid]
+      _ -> []
+    end
+  end
 
   @impl true
   def render(assigns) do
@@ -90,6 +99,7 @@ defmodule PhoenixKitOg.Web.TemplatesLive do
                 type="button"
                 phx-click="delete"
                 phx-value-uuid={t.uuid}
+                phx-disable-with={gettext("Deleting…")}
                 data-confirm={gettext("Delete %{name}?", name: t.name)}
                 class="btn btn-ghost btn-xs text-error"
               >

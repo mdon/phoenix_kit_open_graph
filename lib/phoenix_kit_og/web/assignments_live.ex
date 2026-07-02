@@ -21,7 +21,7 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
   # "Choose image" instead of pasting a UUID.
   use PhoenixKitWeb.Components.MediaBrowser.Embed
 
-  alias PhoenixKitOg.{Assignments, Paths, Slots, Templates, Variables}
+  alias PhoenixKitOg.{Assignments, Errors, Paths, Slots, Templates, Variables}
 
   # Publishing groups/posts helpers live in the phoenix_kit_publishing
   # plugin — guarded by `Code.ensure_loaded?/1` in each helper, but the
@@ -213,10 +213,10 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
 
     cond do
       is_nil(st.template_uuid) ->
-        {:noreply, put_flash(socket, :error, gettext("Pick a template first."))}
+        {:noreply, put_flash(socket, :error, Errors.message(:template_missing))}
 
       st.scope == "group" and is_nil(st.group_uuid) ->
-        {:noreply, put_flash(socket, :error, gettext("Pick a publishing group."))}
+        {:noreply, put_flash(socket, :error, Errors.message(:group_missing))}
 
       true ->
         do_save(socket, st)
@@ -233,7 +233,7 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
         {:noreply, socket}
 
       a ->
-        _ = Assignments.clear(a.module_key, a.scope_type, a.scope_uuid)
+        _ = Assignments.clear(a.module_key, a.scope_type, a.scope_uuid, actor_opts(socket))
 
         {:noreply,
          socket
@@ -275,16 +275,30 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
 
   defp do_save(socket, st) do
     scope_uuid = if st.scope == "default", do: nil, else: st.group_uuid
+    opts = actor_opts(socket)
 
-    with {:ok, assignment} <- Assignments.set(@consumer, st.scope, scope_uuid, st.template_uuid),
-         {:ok, _} <- Assignments.update_slot_mapping(assignment, st.slot_mapping || %{}) do
+    with {:ok, assignment} <-
+           Assignments.set(@consumer, st.scope, scope_uuid, st.template_uuid, opts),
+         {:ok, _} <-
+           Assignments.update_slot_mapping(assignment, st.slot_mapping || %{}, opts) do
       {:noreply,
        socket
        |> put_flash(:info, gettext("Assignment saved."))
        |> assign(:editing_id, nil)
        |> load()}
     else
-      {:error, cs} -> {:noreply, put_flash(socket, :error, inspect(cs.errors))}
+      {:error, %Ecto.Changeset{} = cs} ->
+        {:noreply, put_flash(socket, :error, Errors.message(cs))}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, Errors.message(reason))}
+    end
+  end
+
+  defp actor_opts(socket) do
+    case socket.assigns[:phoenix_kit_current_user] do
+      %{uuid: uuid} -> [actor_uuid: uuid]
+      _ -> []
     end
   end
 
@@ -365,10 +379,17 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
         {:error, reason} ->
           socket
           |> assign(:preview_url, nil)
-          |> assign(:preview_error, humanize_preview_error(reason))
+          |> assign(:preview_error, preview_error_message(reason))
       end
     end
   end
+
+  # Preview errors are a small subset of the atoms `Render.render_url/2`
+  # returns. Route the specific one we know about through `Errors`;
+  # anything else gets the generic wrapper so no raw tuple leaks into
+  # the UI.
+  defp preview_error_message(:rasterizer_missing), do: Errors.message(:rasterizer_missing)
+  defp preview_error_message(reason), do: Errors.message({:render_failed, reason})
 
   # Called when the modal opens — picks the preview group + post so
   # something meaningful renders immediately. `preferred_group_uuid`
@@ -438,12 +459,6 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
       post[:slug] ||
       "(untitled)"
   end
-
-  defp humanize_preview_error(:rasterizer_missing),
-    do: gettext("Preview render needs the resvg NIF — check that the dep resolved on this build.")
-
-  defp humanize_preview_error(reason),
-    do: gettext("Preview render failed: %{reason}", reason: inspect(reason))
 
   defp list_publishing_groups do
     if Code.ensure_loaded?(PhoenixKit.Modules.Publishing.Groups) and
@@ -609,6 +624,7 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
           type="button"
           phx-click="remove_assignment"
           phx-value-id={@assignment.uuid}
+          phx-disable-with={gettext("Removing…")}
           data-confirm={gettext("Remove this assignment?")}
           class="btn btn-ghost btn-xs text-error"
           title={gettext("Remove")}
@@ -747,7 +763,12 @@ defmodule PhoenixKitOg.Web.AssignmentsLive do
           <button type="button" phx-click="cancel_edit" class="btn btn-ghost btn-sm">
             {gettext("Cancel")}
           </button>
-          <button type="button" phx-click="save_edit" class="btn btn-primary btn-sm">
+          <button
+            type="button"
+            phx-click="save_edit"
+            phx-disable-with={gettext("Saving…")}
+            class="btn btn-primary btn-sm"
+          >
             {if @is_new, do: gettext("Create assignment"), else: gettext("Save")}
           </button>
         </div>

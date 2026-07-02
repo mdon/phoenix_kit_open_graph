@@ -321,7 +321,12 @@ defmodule PhoenixKitOg.Web.EditorLive.Template do
           {gettext("Preview")}
         </button>
 
-        <button type="button" phx-click="save_now" class="btn btn-primary btn-sm">
+        <button
+          type="button"
+          phx-click="save_now"
+          phx-disable-with={gettext("Saving…")}
+          class="btn btn-primary btn-sm"
+        >
           <.icon name="hero-bookmark" class="w-4 h-4 mr-1" /> {gettext("Save")}
         </button>
       </div>
@@ -1526,6 +1531,7 @@ defmodule PhoenixKitOg.Web.EditorLive.Template do
           <button
             type="button"
             phx-click="delete_selected"
+            phx-disable-with={gettext("Deleting…")}
             class="btn btn-ghost btn-xs text-error"
             title={gettext("Delete")}
           >
