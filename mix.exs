@@ -1,7 +1,7 @@
 defmodule PhoenixKitOG.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/BeamLabEU/phoenix_kit_og"
 
   def project do
@@ -62,10 +62,16 @@ defmodule PhoenixKitOG.MixProject do
       {:phoenix_live_view, "~> 1.1"},
       {:ecto_sql, "~> 3.13"},
       # SVG → PNG rendering. Ships a precompiled NIF via rustler_precompiled
-      # — no system binary needed in the common case. The parent app already
-      # carries `:rustler` as an optional dep so the source-build fallback
-      # works on bleeding-edge OTP NIF versions (see /www/app/mix.exs).
-      {:resvg, "~> 0.5"},
+      # — no system binary needed in the common case. Optional: resvg 0.5.0
+      # (the latest on Hex) hard-pins `rustler_precompiled ~> 0.8.1`, which
+      # can conflict with a host app that needs a newer rustler_precompiled
+      # for something else (there's no resvg release compatible with it —
+      # this is an upstream constraint, not ours to loosen). Render.Rasterizer
+      # already falls back to the `resvg` CLI, `rsvg-convert`, or ImageMagick
+      # when the NIF isn't compiled in, so making this required would block
+      # installation for hosts that can't take the NIF's rustler_precompiled
+      # version. Add `{:resvg, "~> 0.5"}` directly in the host app to opt in.
+      {:resvg, "~> 0.5", optional: true},
       # `mdex_native` (transitive via phoenix_kit) needs rustler on hosts
       # where its precompiled NIF doesn't match the local NIF version.
       # Optional + `>= 0.0.0` so we don't pin a version that fights hex

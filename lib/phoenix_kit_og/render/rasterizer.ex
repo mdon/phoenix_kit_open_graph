@@ -19,6 +19,11 @@ defmodule PhoenixKitOG.Render.Rasterizer do
 
   require Logger
 
+  # `:resvg` is an optional dependency (see mix.exs) — hosts that don't add
+  # it compile fine, they just never see `which_backend/0` return
+  # `:resvg_nif` (guarded by `Code.ensure_loaded?(Resvg)` below).
+  @compile {:no_warn_undefined, [Resvg]}
+
   @doc """
   Rasterizes the given SVG iodata/binary to a PNG binary.
 

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.1.1 - 2026-07-04
+
+### Fixed
+- `resvg` is now an optional dependency instead of required. Every `resvg`
+  release on Hex (up to 0.5.0, the latest) hard-pins `rustler_precompiled ~>
+  0.8.1`, which could make `phoenix_kit_og` un-installable for a host app
+  that already needs a newer `rustler_precompiled` for something else —
+  version solving would fail with no way for the host app to work around it.
+  `Render.Rasterizer` already falls back to the `resvg` CLI, `rsvg-convert`,
+  or ImageMagick when the NIF isn't compiled in, so making it optional loses
+  nothing for hosts that can't take the pin; add `{:resvg, "~> 0.5"}`
+  directly in the host app to opt into the NIF fast path.
+
 ## 0.1.0 - 2026-07-04
 
 ### Added
