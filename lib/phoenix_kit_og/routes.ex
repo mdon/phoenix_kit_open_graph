@@ -37,21 +37,24 @@ defmodule PhoenixKitOG.Routes do
   """
   def admin_locale_routes do
     quote do
-      live "/admin/open-graph/new", PhoenixKitOG.Web.EditorLive, :new,
+      live("/admin/open-graph/new", PhoenixKitOG.Web.EditorLive, :new,
         as: :phoenix_kit_og_new_localized
+      )
 
-      live "/admin/open-graph/:uuid/edit", PhoenixKitOG.Web.EditorLive, :edit,
+      live("/admin/open-graph/:uuid/edit", PhoenixKitOG.Web.EditorLive, :edit,
         as: :phoenix_kit_og_edit_localized
+      )
     end
   end
 
   @doc "Non-localized variants."
   def admin_routes do
     quote do
-      live "/admin/open-graph/new", PhoenixKitOG.Web.EditorLive, :new, as: :phoenix_kit_og_new
+      live("/admin/open-graph/new", PhoenixKitOG.Web.EditorLive, :new, as: :phoenix_kit_og_new)
 
-      live "/admin/open-graph/:uuid/edit", PhoenixKitOG.Web.EditorLive, :edit,
+      live("/admin/open-graph/:uuid/edit", PhoenixKitOG.Web.EditorLive, :edit,
         as: :phoenix_kit_og_edit
+      )
     end
   end
 end

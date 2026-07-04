@@ -22,7 +22,9 @@ defmodule PhoenixKitOG.Web.ImageControllerTest do
     # Point the cache at a per-test tmp dir so we don't collide with
     # a running dev-mode cache or need a chmod on the shared
     # /tmp/phoenix_kit_og_cache directory the elixir supervisor owns.
-    tmp = Path.join(System.tmp_dir!(), "phoenix_kit_og_test_#{System.unique_integer([:positive])}")
+    tmp =
+      Path.join(System.tmp_dir!(), "phoenix_kit_og_test_#{System.unique_integer([:positive])}")
+
     File.mkdir_p!(tmp)
     Application.put_env(:phoenix_kit_og, :cache_dir, tmp)
 

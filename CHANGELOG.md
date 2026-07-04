@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.1.0 - 2026-07-03
+## 0.1.0 - 2026-07-04
 
 ### Added
 - WYSIWYG SVG canvas editor for OpenGraph image templates — text, image, rect,
@@ -31,3 +31,11 @@ All notable changes to this project will be documented in this file.
 - `phoenix_kit_og_templates` and `phoenix_kit_og_assignments` schemas
   (migration V139), with a partial-unique-index pair so Postgres NULL
   `scope_uuid` (module-wide default) and per-scope assignments don't collide
+
+### Fixed
+- The template editor's `/new` route no longer leaks an orphaned template row
+  on every fresh page load — creation is now gated on `connected?/1` since
+  LiveView mounts twice (disconnected + connected) for a full page load
+- `Render.Svg` no longer hardcodes `http://localhost:4000` for host-relative
+  image sources (e.g. the signed local-storage fallback URL); it now degrades
+  the same way any other unresolvable image href does

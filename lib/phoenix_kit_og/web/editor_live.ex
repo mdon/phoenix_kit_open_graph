@@ -40,7 +40,7 @@ defmodule PhoenixKitOG.Web.EditorLive do
 
   @impl true
   def mount(params, _session, socket) do
-    case load_or_create_template(params, socket.assigns.live_action) do
+    case load_or_create_template(params, socket.assigns.live_action, socket) do
       {:ok, template} ->
         canvas = ensure_canvas(template.canvas)
 
@@ -488,15 +488,24 @@ defmodule PhoenixKitOG.Web.EditorLive do
   # Loading
   # =========================================================================
 
-  defp load_or_create_template(_params, :new) do
-    name = "Untitled #{System.unique_integer([:positive])}"
-    # No socket here (`load_or_create_template/2` runs pre-mount); the
-    # actor is threaded later on the first save. Activity feed shows an
-    # anonymous `template.created` for the initial insert.
-    Templates.create(%{"name" => name, "canvas" => Canvas.blank()})
+  # `mount/3` runs once for the disconnected (static HTML) render and
+  # again for the connected (WebSocket) render. Only create the row on
+  # the connected pass — otherwise every fresh visit to `/new` (a full
+  # page load, not a `push_navigate` from an already-connected LV)
+  # leaves an orphaned blank template behind from the disconnected
+  # render nobody ever sees.
+  defp load_or_create_template(_params, :new, socket) do
+    if connected?(socket) do
+      name = "Untitled #{System.unique_integer([:positive])}"
+      # The actor is threaded later on the first save. Activity feed
+      # shows an anonymous `template.created` for the initial insert.
+      Templates.create(%{"name" => name, "canvas" => Canvas.blank()})
+    else
+      {:ok, %Template{canvas: Canvas.blank()}}
+    end
   end
 
-  defp load_or_create_template(%{"uuid" => uuid}, :edit) do
+  defp load_or_create_template(%{"uuid" => uuid}, :edit, _socket) do
     case Templates.get(uuid) do
       nil -> {:error, :not_found}
       %Template{} = t -> {:ok, t}
@@ -513,6 +522,7 @@ defmodule PhoenixKitOG.Web.EditorLive do
   defp nudge_delta(_, _), do: {0, 0}
 
   defp to_number(v) when is_number(v), do: v
+
   defp to_number(v) when is_binary(v) do
     case Float.parse(v) do
       {n, _} -> n

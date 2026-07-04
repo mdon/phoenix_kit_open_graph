@@ -137,6 +137,30 @@ defmodule PhoenixKitOG.Render.SvgTest do
       assert svg =~ ~s|href="http://example.com/image.png"|
     end
 
+    test "a host-relative src (e.g. an unresolvable signed local-storage URL) resolves to an empty href" do
+      # The rasterizer only reads `data:` URLs or local file bytes — a
+      # bare `/file/...` path can't be fetched any more than a remote
+      # HTTP URL can. Regression test: this used to get prepended with
+      # a hardcoded `http://localhost:4000`, which broke on every real
+      # deployment instead of degrading like any other unresolvable href.
+      canvas = %{
+        "elements" => [
+          %{
+            "type" => "image",
+            "src" => "/file/018e3c4a-9f6b-7890-abcd-ef1234567890/medium/ab12",
+            "x" => 0,
+            "y" => 0,
+            "width" => 100,
+            "height" => 100
+          }
+        ]
+      }
+
+      svg = Svg.to_binary(canvas)
+      refute svg =~ "localhost"
+      assert svg =~ ~s|<image href="" |
+    end
+
     test "a data: URL passes through unchanged (used for the placeholder)" do
       data_url = "data:image/svg+xml;base64,PHN2Zy8+"
 

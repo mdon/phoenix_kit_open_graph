@@ -91,16 +91,20 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # Preview modal — renders the current template as a PNG and embeds it
   # in mockups of the popular platforms.
   # =========================================================================
-  attr :show, :boolean, required: true
-  attr :url, :string, default: nil
-  attr :error, :string, default: nil
-  attr :global_values, :map, required: true
+  attr(:show, :boolean, required: true)
+  attr(:url, :string, default: nil)
+  attr(:error, :string, default: nil)
+  attr(:global_values, :map, required: true)
 
   defp preview_modal(assigns) do
     assigns =
       assigns
-      |> assign_new(:site_host, fn -> Map.get(assigns.global_values, "site_host", "example.com") end)
-      |> assign_new(:site_name, fn -> Map.get(assigns.global_values, "site_name", "Example Site") end)
+      |> assign_new(:site_host, fn ->
+        Map.get(assigns.global_values, "site_host", "example.com")
+      end)
+      |> assign_new(:site_name, fn ->
+        Map.get(assigns.global_values, "site_name", "Example Site")
+      end)
       |> assign_new(:sample_title, fn -> "Sample Post Title" end)
       |> assign_new(:sample_desc, fn ->
         "This is a sample post description — the way readers will see the intro before they click through."
@@ -198,8 +202,8 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :platform, :string, required: true
-  slot :inner_block, required: true
+  attr(:platform, :string, required: true)
+  slot(:inner_block, required: true)
 
   defp platform_card(assigns) do
     ~H"""
@@ -214,10 +218,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
 
   # Facebook desktop link card — big image, then title/description/host
   # in a subdued strip below.
-  attr :image, :string, required: true
-  attr :title, :string, required: true
-  attr :description, :string, required: true
-  attr :host, :string, required: true
+  attr(:image, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:host, :string, required: true)
 
   defp fb_card(assigns) do
     ~H"""
@@ -232,10 +236,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :image, :string, required: true
-  attr :title, :string, required: true
-  attr :description, :string, required: true
-  attr :host, :string, required: true
+  attr(:image, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:host, :string, required: true)
 
   defp twitter_card(assigns) do
     ~H"""
@@ -249,10 +253,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :image, :string, required: true
-  attr :title, :string, required: true
-  attr :description, :string, required: true
-  attr :host, :string, required: true
+  attr(:image, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:host, :string, required: true)
 
   defp linkedin_card(assigns) do
     ~H"""
@@ -266,11 +270,11 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :image, :string, required: true
-  attr :title, :string, required: true
-  attr :description, :string, required: true
-  attr :host, :string, required: true
-  attr :site_name, :string, required: true
+  attr(:image, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:host, :string, required: true)
+  attr(:site_name, :string, required: true)
 
   defp discord_card(assigns) do
     ~H"""
@@ -606,9 +610,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
 
   # Editor-side background renderer. When bg is image + slot-like src,
   # falls back to the solid color so the editor doesn't leak `{{...}}`.
-  attr :background, :map, required: true
-  attr :canvas_width, :any, required: true
-  attr :canvas_height, :any, required: true
+  attr(:background, :map, required: true)
+  attr(:canvas_width, :any, required: true)
+  attr(:canvas_height, :any, required: true)
 
   defp background(assigns) do
     type = Map.get(assigns.background, "type", "color")
@@ -712,9 +716,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # ---- Element renderers — Phoenix.Component functions called with
   # ---- `<.element ... />` so HEEx's change-tracking metadata is present.
 
-  attr :element, :map, required: true
-  attr :preview?, :boolean, required: true
-  attr :global_values, :map, default: %{}
+  attr(:element, :map, required: true)
+  attr(:preview?, :boolean, required: true)
+  attr(:global_values, :map, default: %{})
 
   defp element(assigns) do
     type = assigns.element["type"]
@@ -791,12 +795,12 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # left. A wrapping `<g transform>` would achieve the same visual
   # but breaks the JS drag/resize hook, which reads bounds from the
   # inner rect (expecting canvas-space coords, not local ones).
-  attr :id, :string, required: true
-  attr :x, :any, required: true
-  attr :y, :any, required: true
-  attr :width, :any, required: true
-  attr :height, :any, required: true
-  attr :label, :string, required: true
+  attr(:id, :string, required: true)
+  attr(:x, :any, required: true)
+  attr(:y, :any, required: true)
+  attr(:width, :any, required: true)
+  attr(:height, :any, required: true)
+  attr(:label, :string, required: true)
 
   defp image_placeholder(assigns) do
     assigns = assign(assigns, :pattern_id, "pk-og-checker-#{assigns.id}")
@@ -854,7 +858,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # Shared underlay renderer — drops a translucent dark/light rect
   # beneath the element so text stays legible even over a busy image
   # background. Attached as the first child of every element's `<g>`.
-  attr :element, :map, required: true
+  attr(:element, :map, required: true)
 
   defp underlay(assigns) do
     opacity = Map.get(assigns.element, "underlay_opacity", 0)
@@ -981,7 +985,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
 
   # ---- Selection outline + resize handles ----
 
-  attr :el, :map, required: true
+  attr(:el, :map, required: true)
 
   defp selection(assigns) do
     ~H"""
@@ -1040,10 +1044,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :el, :map, required: true
-  attr :position, :string, required: true
-  attr :cx, :any, required: true
-  attr :cy, :any, required: true
+  attr(:el, :map, required: true)
+  attr(:position, :string, required: true)
+  attr(:cx, :any, required: true)
+  attr(:cy, :any, required: true)
 
   defp handle(assigns) do
     cursor =
@@ -1134,7 +1138,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # selected. Covers canvas size + background (color or image + a
   # black text-legibility overlay).
   # ==============================================================
-  attr :canvas, :map, required: true
+  attr(:canvas, :map, required: true)
 
   defp template_props(assigns) do
     bg = Map.get(assigns.canvas, "background", %{})
@@ -1361,9 +1365,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # `"element_src"`) tells the LV which field to write when the user
   # confirms.
   # =========================================================================
-  attr :target, :string, required: true
-  attr :value, :string, required: true
-  attr :label, :string, required: true
+  attr(:target, :string, required: true)
+  attr(:value, :string, required: true)
+  attr(:label, :string, required: true)
 
   defp media_field(assigns) do
     preview = media_preview_url(assigns.value)
@@ -1448,9 +1452,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   defp strip_curlies(v) when is_binary(v), do: v
   defp strip_curlies(_), do: ""
 
-  attr :field, :string, required: true
-  attr :label, :string, required: true
-  attr :value, :any, required: true
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
+  attr(:value, :any, required: true)
 
   defp canvas_field(assigns) do
     ~H"""
@@ -1472,9 +1476,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :field, :string, required: true
-  attr :label, :string, required: true
-  attr :value, :any, required: true
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
+  attr(:value, :any, required: true)
 
   defp canvas_color_field(assigns) do
     ~H"""
@@ -1503,8 +1507,8 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :canvas, :map, required: true
+  attr(:selected, :map, required: true)
+  attr(:canvas, :map, required: true)
 
   defp property_panel(assigns) do
     ~H"""
@@ -1608,8 +1612,8 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :canvas, :map, required: true
+  attr(:selected, :map, required: true)
+  attr(:canvas, :map, required: true)
 
   defp image_props(assigns) do
     src = Map.get(assigns.selected, "src", "")
@@ -1725,7 +1729,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
 
   # ---- Field primitives ----
 
-  attr :selected, :map, required: true
+  attr(:selected, :map, required: true)
 
   defp underlay_props(assigns) do
     opacity = Map.get(assigns.selected, "underlay_opacity", 0)
@@ -1798,9 +1802,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :field, :string, required: true
-  attr :label, :string, required: true
+  attr(:selected, :map, required: true)
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
 
   defp num_field(assigns) do
     ~H"""
@@ -1823,9 +1827,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :field, :string, required: true
-  attr :label, :string, required: true
+  attr(:selected, :map, required: true)
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
 
   defp text_field(assigns) do
     ~H"""
@@ -1847,9 +1851,9 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :field, :string, required: true
-  attr :label, :string, required: true
+  attr(:selected, :map, required: true)
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
 
   defp color_field(assigns) do
     # Both inputs are named `value` so phx-change sees one param. Form
@@ -1885,10 +1889,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  attr :selected, :map, required: true
-  attr :field, :string, required: true
-  attr :label, :string, required: true
-  attr :options, :list, required: true
+  attr(:selected, :map, required: true)
+  attr(:field, :string, required: true)
+  attr(:label, :string, required: true)
+  attr(:options, :list, required: true)
 
   defp select_field(assigns) do
     ~H"""
@@ -2399,7 +2403,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   # value from, with a link to the settings page for the ones that
   # are user-editable. Rendered when the current text/stamp contains
   # at least one `[[...]]` reference.
-  attr :names, :list, required: true
+  attr(:names, :list, required: true)
 
   defp globals_info(assigns) do
     ~H"""

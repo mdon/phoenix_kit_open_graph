@@ -279,10 +279,14 @@ defmodule PhoenixKitOG.Canvas do
 
     name =
       cond do
-        is_binary(existing_name) and existing_name != "" -> existing_name
+        is_binary(existing_name) and existing_name != "" ->
+          existing_name
+
         is_binary(existing_value) and String.starts_with?(existing_value, "{{") ->
           strip_curly(existing_value)
-        true -> next_slot_name(canvas, "BackgroundImage")
+
+        true ->
+          next_slot_name(canvas, "BackgroundImage")
       end
 
     bg =
@@ -421,12 +425,16 @@ defmodule PhoenixKitOG.Canvas do
   defp coerce("weight", value, _el, _canvas), do: to_number(value)
   defp coerce("radius", value, _el, _canvas), do: max(0, to_number(value))
   defp coerce("stroke_width", value, _el, _canvas), do: max(0, to_number(value))
-  defp coerce("underlay_opacity", value, _el, _canvas), do: value |> to_number() |> max(0) |> min(1)
+
+  defp coerce("underlay_opacity", value, _el, _canvas),
+    do: value |> to_number() |> max(0) |> min(1)
+
   defp coerce("underlay_color", v, _, _) when v in ["dark", "light"], do: v
   defp coerce("underlay_color", _, _, _), do: "dark"
   defp coerce(_field, value, _el, _canvas), do: value
 
   defp to_number(v) when is_number(v), do: v
+
   defp to_number(v) when is_binary(v) do
     case Float.parse(v) do
       {n, _} -> n

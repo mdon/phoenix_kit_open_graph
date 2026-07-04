@@ -384,9 +384,15 @@ defmodule PhoenixKitOG.Render.Svg do
   # `og.image` HTML, not into the SVG we rasterize).
   defp resolve_image_href("http://" <> _ = url), do: url
   defp resolve_image_href("https://" <> _ = url), do: url
-  defp resolve_image_href("/" <> _ = url), do: "http://localhost:4000" <> url
   defp resolve_image_href("file://" <> _ = url), do: url
   defp resolve_image_href("data:" <> _ = url), do: url
+
+  # A host-relative path (e.g. the signed local-storage fallback URL)
+  # isn't fetchable by the rasterizer any more than a remote HTTP URL
+  # is — it only reads `data:` URLs or local file bytes. Treat it as
+  # unresolved so the caller falls back to its default background/
+  # placeholder handling instead of guessing at the deployment's origin.
+  defp resolve_image_href("/" <> _), do: ""
 
   defp resolve_image_href(uuid) when is_binary(uuid) do
     # Media UUID — prefer inlining the bytes as `data:` so resvg can

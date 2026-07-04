@@ -13,8 +13,7 @@ defmodule PhoenixKitOG.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      description:
-        "OpenGraph template + hierarchical assignment module for PhoenixKit",
+      description: "OpenGraph template + hierarchical assignment module for PhoenixKit",
       package: package(),
       dialyzer: [plt_add_apps: [:phoenix_kit]],
       name: "PhoenixKitOG",
