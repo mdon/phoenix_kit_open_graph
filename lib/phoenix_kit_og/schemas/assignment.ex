@@ -16,6 +16,7 @@ defmodule PhoenixKitOG.Schemas.Assignment do
   """
 
   use Ecto.Schema
+  use PhoenixKit.SchemaPrefix
 
   import Ecto.Changeset
 

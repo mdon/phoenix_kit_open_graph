@@ -8,6 +8,7 @@ defmodule PhoenixKitOG.Schemas.Template do
   """
 
   use Ecto.Schema
+  use PhoenixKit.SchemaPrefix
 
   import Ecto.Changeset
 

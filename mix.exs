@@ -58,7 +58,7 @@ defmodule PhoenixKitOG.MixProject do
 
   defp deps do
     [
-      pk_dep(:phoenix_kit, "~> 1.7"),
+      pk_dep(:phoenix_kit, "~> 1.7.189"),
       {:phoenix_live_view, "~> 1.1"},
       {:ecto_sql, "~> 3.13"},
       # SVG → PNG rendering. Ships a precompiled NIF via rustler_precompiled
