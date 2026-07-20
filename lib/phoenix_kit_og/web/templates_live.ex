@@ -6,6 +6,7 @@ defmodule PhoenixKitOG.Web.TemplatesLive do
   """
 
   use PhoenixKitWeb, :live_view
+  use Gettext, backend: PhoenixKitOG.Gettext
 
   alias PhoenixKitOG.{Errors, Paths, Templates}
 

@@ -1,4 +1,6 @@
 defmodule PhoenixKitOG.Variables do
+  use Gettext, backend: PhoenixKitOG.Gettext
+
   @moduledoc """
   Registry + resolver for module-exposed variables that templates can
   bind their slots to.
@@ -74,6 +76,30 @@ defmodule PhoenixKitOG.Variables do
 
   @spec global() :: [variable()]
   def global, do: @globals
+
+  @doc """
+  Translated label for one of the OG-owned global variables — literal
+  `gettext/1` clauses so `mix gettext.extract` sees them (a `gettext(v.label)`
+  over the `@globals` attribute would be invisible to the extractor).
+  Returns `nil` for a name that isn't an OG global (e.g. a consumer
+  module's own variable), so the caller can fall back to `v.label`.
+  """
+  @spec global_label(String.t()) :: String.t() | nil
+  def global_label("site_host"), do: gettext("Site host")
+  def global_label("site_url"), do: gettext("Site URL")
+  def global_label("site_name"), do: gettext("Site name")
+  def global_label("page_url"), do: gettext("Current page URL")
+  def global_label("page_locale"), do: gettext("Current locale")
+  def global_label(_), do: nil
+
+  @doc "Translated description for an OG-owned global; `nil` otherwise."
+  @spec global_description(String.t()) :: String.t() | nil
+  def global_description("site_host"), do: gettext("e.g. example.com")
+  def global_description("site_url"), do: gettext("e.g. https://example.com")
+  def global_description("site_name"), do: gettext("From the project_title setting")
+  def global_description("page_url"), do: gettext("Full URL of the page carrying this OG image")
+  def global_description("page_locale"), do: gettext("e.g. en, es-ES")
+  def global_description(_), do: nil
 
   @doc "Merged list — globals + everything a consumer module declares."
   @spec for_module(String.t()) :: [variable()]

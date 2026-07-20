@@ -16,6 +16,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   """
 
   use PhoenixKitWeb, :html
+  use Gettext, backend: PhoenixKitOG.Gettext
 
   alias Phoenix.LiveView.JS
   alias PhoenixKitOG.{Canvas, Paths}
@@ -105,9 +106,11 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
       |> assign_new(:site_name, fn ->
         Map.get(assigns.global_values, "site_name", "Example Site")
       end)
-      |> assign_new(:sample_title, fn -> "Sample Post Title" end)
+      |> assign_new(:sample_title, fn -> gettext("Sample Post Title") end)
       |> assign_new(:sample_desc, fn ->
-        "This is a sample post description — the way readers will see the intro before they click through."
+        gettext(
+          "This is a sample post description — the way readers will see the intro before they click through."
+        )
       end)
 
     ~H"""
@@ -150,7 +153,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
               <div class="p-3">
                 <img
                   src={@url}
-                  alt="OG preview"
+                  alt={gettext("OG preview")}
                   class="w-full rounded border border-base-300 shadow-sm"
                   loading="lazy"
                 />
@@ -504,10 +507,10 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
   defp save_pill(assigns) do
     {label, class} =
       case assigns.state do
-        :saved -> {"Saved", "text-success"}
-        :dirty -> {"Unsaved changes", "text-warning"}
-        :saving -> {"Saving…", "text-info"}
-        :error -> {"Save failed", "text-error"}
+        :saved -> {gettext("Saved"), "text-success"}
+        :dirty -> {gettext("Unsaved changes"), "text-warning"}
+        :saving -> {gettext("Saving…"), "text-info"}
+        :error -> {gettext("Save failed"), "text-error"}
       end
 
     assigns = assigns |> assign(:label, label) |> assign(:class, class)
@@ -1607,13 +1610,13 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
           selected={@selected}
           field="align"
           label={gettext("Align")}
-          options={[{"left", "Left"}, {"center", "Center"}, {"right", "Right"}]}
+          options={[{"left", gettext("Left")}, {"center", gettext("Center")}, {"right", gettext("Right")}]}
         />
         <.select_field
           selected={@selected}
           field="valign"
           label={gettext("V-align")}
-          options={[{"top", "Top"}, {"middle", "Middle"}, {"bottom", "Bottom"}]}
+          options={[{"top", gettext("Top")}, {"middle", gettext("Middle")}, {"bottom", gettext("Bottom")}]}
         />
       </div>
     </fieldset>
@@ -1690,7 +1693,7 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
               type="text"
               name="value"
               value={strip_curlies(@src)}
-              placeholder="Image"
+              placeholder={gettext("Image")}
               class="input input-bordered input-sm flex-1 font-mono text-xs"
               phx-debounce="200"
             />
@@ -1959,11 +1962,11 @@ defmodule PhoenixKitOG.Web.EditorLive.Template do
     """
   end
 
-  defp global_description("site_url"), do: "Site's endpoint URL (from app config)"
-  defp global_description("site_host"), do: "Site's hostname (from app config)"
-  defp global_description("site_name"), do: "Project title (settings)"
-  defp global_description("page_url"), do: "URL of the current page/post"
-  defp global_description("page_locale"), do: "Active locale for this page"
+  defp global_description("site_url"), do: gettext("Site's endpoint URL (from app config)")
+  defp global_description("site_host"), do: gettext("Site's hostname (from app config)")
+  defp global_description("site_name"), do: gettext("Project title (settings)")
+  defp global_description("page_url"), do: gettext("URL of the current page/post")
+  defp global_description("page_locale"), do: gettext("Active locale for this page")
   defp global_description(name), do: name
 
   # Layered `text-shadow` — four blurs at increasing radii with

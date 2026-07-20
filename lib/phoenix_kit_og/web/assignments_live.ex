@@ -15,6 +15,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
   """
 
   use PhoenixKitWeb, :live_view
+  use Gettext, backend: PhoenixKitOG.Gettext
 
   require Logger
 
@@ -37,7 +38,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "OpenGraph — Assignments")
+     |> assign(:page_title, gettext("OpenGraph — Assignments"))
      |> assign(:consumer, @consumer)
      |> assign(:editing_id, nil)
      |> assign(:edit_state, blank_edit_state())
@@ -492,7 +493,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
       (post[:metadata] && post[:metadata]["title"]) ||
       post[:title] ||
       post[:slug] ||
-      "(untitled)"
+      gettext("(untitled)")
   end
 
   defp list_publishing_groups do
@@ -895,7 +896,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
         <% @url -> %>
           <img
             src={@url}
-            alt="OG preview"
+            alt={gettext("OG preview")}
             class="w-full rounded-lg border-2 border-base-300 shadow-sm"
             loading="lazy"
           />
@@ -920,7 +921,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
     badge =
       case status do
         "published" -> ""
-        "draft" -> " (draft)"
+        "draft" -> " " <> gettext("(draft)")
         other when is_binary(other) -> " (#{other})"
         _ -> ""
       end
@@ -998,7 +999,7 @@ defmodule PhoenixKitOG.Web.AssignmentsLive do
                 value={v.name}
                 selected={@dropdown_value == v.name}
               >
-                {v.label}
+                {PhoenixKitOG.Variables.global_label(v.name) || v.label}
               </option>
             </optgroup>
             <option value="__custom__" selected={@is_custom}>

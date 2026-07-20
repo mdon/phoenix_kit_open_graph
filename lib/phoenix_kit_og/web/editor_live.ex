@@ -29,6 +29,7 @@ defmodule PhoenixKitOG.Web.EditorLive do
   """
 
   use PhoenixKitWeb, :live_view
+  use Gettext, backend: PhoenixKitOG.Gettext
 
   # Sets up the file-upload allowlist + `validate` event stub + parent
   # `handle_info` delegator for MediaSelectorModal to work. Zero
@@ -48,7 +49,10 @@ defmodule PhoenixKitOG.Web.EditorLive do
 
         {:ok,
          socket
-         |> assign(:page_title, "OpenGraph — #{template.name || "Editor"}")
+         |> assign(
+           :page_title,
+           gettext("OpenGraph — %{name}", name: template.name || gettext("Editor"))
+         )
          |> assign(:template, template)
          |> assign(:canvas, canvas)
          |> assign(:selected_id, nil)
@@ -300,7 +304,7 @@ defmodule PhoenixKitOG.Web.EditorLive do
         {:noreply,
          socket
          |> assign(:template, template)
-         |> assign(:page_title, "OpenGraph — #{template.name}")}
+         |> assign(:page_title, gettext("OpenGraph — %{name}", name: template.name))}
 
       {:error, _cs} ->
         {:noreply, put_flash(socket, :error, gettext("Could not rename template."))}

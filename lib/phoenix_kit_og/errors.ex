@@ -5,8 +5,8 @@ defmodule PhoenixKitOG.Errors do
   user-facing strings.
 
   Keeping UI copy in one place means every "not found" / "render failed"
-  flash reads the same wording, and translations live in core's gettext
-  backend rather than being scattered across LiveViews. Callers pattern-
+  flash reads the same wording, and translations live in this module's own gettext
+  backend (`PhoenixKitOG.Gettext`) rather than being scattered across LiveViews. Callers pattern-
   match on atoms (or tagged tuples for atoms with parameters);
   `message/1` wraps each mapping in `gettext/1` at the UI boundary.
 
@@ -26,6 +26,8 @@ defmodule PhoenixKitOG.Errors do
       iex> PhoenixKitOG.Errors.message(:rasterizer_missing)
       "Preview render needs the resvg NIF — check that the dep resolved on this build."
   """
+
+  use Gettext, backend: PhoenixKitOG.Gettext
 
   alias Ecto.Changeset
 
@@ -47,36 +49,26 @@ defmodule PhoenixKitOG.Errors do
   """
   @spec message(term()) :: String.t() | Ecto.Changeset.t()
   def message(:not_found),
-    do: Gettext.gettext(PhoenixKitWeb.Gettext, "Not found.")
+    do: gettext("Not found.")
 
   def message(:rasterizer_missing),
-    do:
-      Gettext.gettext(
-        PhoenixKitWeb.Gettext,
-        "Preview render needs the resvg NIF — check that the dep resolved on this build."
-      )
+    do: gettext("Preview render needs the resvg NIF — check that the dep resolved on this build.")
 
   def message(:template_missing),
-    do: Gettext.gettext(PhoenixKitWeb.Gettext, "Pick a template first.")
+    do: gettext("Pick a template first.")
 
   def message(:group_missing),
-    do: Gettext.gettext(PhoenixKitWeb.Gettext, "Pick a publishing group.")
+    do: gettext("Pick a publishing group.")
 
   def message({:render_failed, reason}),
-    do:
-      Gettext.gettext(
-        PhoenixKitWeb.Gettext,
-        "Preview render failed: %{reason}",
-        reason: truncate(inspect(reason))
-      )
+    do: gettext("Preview render failed: %{reason}", reason: truncate(inspect(reason)))
 
   # Pass-through for shapes that already carry user-renderable content.
   def message(%Changeset{} = changeset), do: changeset
   def message(reason) when is_binary(reason), do: reason
 
   def message(reason) do
-    Gettext.gettext(
-      PhoenixKitWeb.Gettext,
+    gettext(
       "Unexpected error: %{reason}",
       reason: truncate(inspect(reason))
     )
