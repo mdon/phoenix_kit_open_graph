@@ -64,6 +64,21 @@ defmodule PhoenixKitOG.TemplatesTest do
 
       assert_activity(action: "template.created", actor_uuid: actor, failed: true)
     end
+
+    test "a failed UPDATE keeps the resource_uuid (not an orphaned audit row)" do
+      actor = Ecto.UUID.generate()
+      {:ok, t} = Templates.create(valid_attrs())
+      {:error, _} = Templates.update(t, %{"name" => ""}, actor_uuid: actor)
+
+      # The changeset's data carries the loaded struct, so the failure row
+      # still points at WHICH template the edit targeted.
+      assert_activity(
+        action: "template.updated",
+        actor_uuid: actor,
+        resource_uuid: t.uuid,
+        failed: true
+      )
+    end
   end
 
   # Query phoenix_kit_activities directly for a matching row.
